@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting" Version="9.0.0-rc.1.24511.1" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.0.0-rc.1.24511.1" />
   </ItemGroup>
 
 </Project>

@@ -1,29 +1,16 @@
-using System.Reflection;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.InteropServices;
-
 var builder = DistributedApplication.CreateBuilder(args);
 
-//var usernameDefault = "postgres";
-//var passwordDefault = "***lakefs_pwd_2000***";
+var userNameParam = builder.AddParameter("username", "postgres", publishValueAsDefault: true);
+var passwordParam = builder.AddParameter("password", "LakeFSPassword", publishValueAsDefault: true);
 
-//var usernameParam = builder.AddParameter("username", usernameDefault, true);
-//var passwordParam = builder.AddParameter("password", passwordDefault, true);
+var postgres = builder.AddPostgres("postgres", userName: userNameParam, password: passwordParam, port: 54332)
+    .WithPgWeb();
 
-//var postgres = builder.AddPostgres("postgres", usernameParam, passwordParam, 54332)
-//    .WithPgAdmin();
+var postgresdb = postgres.AddDatabase("postgredb", "postgres");
 
-//builder.AddContainer("lakefs", "treeverse/lakefs")
-//    .WithHttpEndpoint(8000, 8000)
-//    .WithEnvironment("LAKEFS_DATABASE_TYPE", "postgres")
-//    .WithEnvironment("LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING", $"postgres://{usernameDefault}:{passwordDefault}@postgres:5432/{usernameDefault}?sslmode=disable")
-//    .WithEnvironment("LAKEFS_AUTH_ENCRYPT_SECRET_KEY", "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc")
-//    .WithEnvironment("LAKEFS_BLOCKSTORE_TYPE", "local")
-//    .WithEnvironment("LAKEFS_BLOCKSTORE_TYPE_LOCAL_PATH", "~/lakefs/dev/data")
-//    .WithArgs(["run"])
-//    .WithReference(postgres).WaitFor(postgres);
-
-var lakefs = builder.AddLakeFS("lakefs");
+var lakefs = builder.AddLakeFS("lakefs", postgres: postgres.Resource)
+    .WithImageTag("1.39.2")
+    .WaitFor(postgresdb);
 
 var apiService = builder.AddProject<Projects.AspireAppLakeFS_ApiService>("apiservice")
      .WithReference(lakefs).WaitFor(lakefs);
