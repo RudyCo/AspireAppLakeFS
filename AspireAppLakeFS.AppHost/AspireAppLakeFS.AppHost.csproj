@@ -1,10 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0-rc.1.24511.1" />
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsAspireHost>true</IsAspireHost>
@@ -13,7 +13,13 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="9.0.0-rc.1.24511.1" />
-    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="8.2.2" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.0.0-rc.1.24511.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AspireAppLakeFS.ApiService\AspireAppLakeFS.ApiService.csproj" />
+    <ProjectReference Include="..\AspireAppLakeFS.Web\AspireAppLakeFS.Web.csproj" />
+    <ProjectReference Include="..\AspireAppLakeFS.Hosting\AspireAppLakeFS.Hosting.csproj" IsAspireProjectResource="false" />
   </ItemGroup>
 
 </Project>
