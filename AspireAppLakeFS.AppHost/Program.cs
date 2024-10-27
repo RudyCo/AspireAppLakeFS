@@ -1,14 +1,11 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var userNameParam = builder.AddParameter("username", "postgres", publishValueAsDefault: true);
-var passwordParam = builder.AddParameter("password", "LakeFSPassword", publishValueAsDefault: true);
-
-var postgres = builder.AddPostgres("postgres", userName: userNameParam, password: passwordParam, port: 54332)
+var postgres = builder.AddPostgres("lakefs-postgres")
     .WithPgWeb();
 
-var postgresdb = postgres.AddDatabase("postgredb", "postgres");
+var postgresdb = postgres.AddDatabase("lakefs-postgredb", "postgres");
 
-var lakefs = builder.AddLakeFS("lakefs", postgres: postgres.Resource)
+var lakefs = builder.AddLakeFS("lakefs", database: postgresdb.Resource)
     .WithImageTag("1.39.2")
     .WaitFor(postgresdb);
 

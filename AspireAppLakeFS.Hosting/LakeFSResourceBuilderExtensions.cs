@@ -1,9 +1,10 @@
 ﻿using Aspire.Hosting.ApplicationModel;
-using k8s.KubeConfigModels;
-using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography;
 
+#pragma warning disable IDE0130 // Namespace does not match folder structure
+
 namespace Aspire.Hosting;
+#pragma warning restore IDE0130 // Namespace does not match folder structure
 
 // This class just contains constant strings that can be updated periodically
 // when new versions of the underlying container are released.
@@ -69,8 +70,7 @@ public static class LakeFSResourceBuilderExtensions
         this IDistributedApplicationBuilder builder,
         string name,
         int? httpPort = null,
-        PostgresServerResource? postgres = null
-        )
+        PostgresDatabaseResource? database = null)
     {
         // The AddResource method is a core API within .NET Aspire and is
         // used by resource developers to wrap a custom resource in an
@@ -86,22 +86,28 @@ public static class LakeFSResourceBuilderExtensions
             .WithEnvironment("LAKEFS_BLOCKSTORE_TYPE", "local")
             .WithArgs(["run"]);
 
-        if (postgres != null)
-        {
-            lakeFS.WithEnvironment("LAKEFS_DATABASE_TYPE", "postgres");
-            builder.Eventing.Subscribe<ResourceReadyEvent>(postgres, async (@event, ct) =>
-            {
-                var srv = postgres;
-                //var connectionString = $"postgres://{database.Name}:{Uri.EscapeDataString(srv.PasswordParameter.Value)}@{srv.Name}:{srv.PrimaryEndpoint.TargetPort}/{database.DatabaseName}";
-                var connectionString = $"postgres://{postgres.Name}:{srv.PasswordParameter.Value}@{srv.Name}:{srv.PrimaryEndpoint.TargetPort}/{postgres.Name}";
-                lakeFS.WithEnvironment("LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING", connectionString);
-            });
-        }
-        else
-        {
+        if (database == null)
             lakeFS.WithEnvironment("LAKEFS_DATABASE_TYPE", "local");
-        }
+        else
+            AddLakeFSDatabase(builder, database, lakeFS);
 
         return lakeFS;
+    }
+
+    private static void AddLakeFSDatabase(IDistributedApplicationBuilder builder, PostgresDatabaseResource db, IResourceBuilder<LakeFSResource> lakeFS)
+    {
+        lakeFS.WithEnvironment("LAKEFS_DATABASE_TYPE", "postgres");
+        builder.Eventing.Subscribe<ResourceReadyEvent>(db, async (@event, ct) =>
+            await Task.Run(() =>
+            {
+                if (!ct.IsCancellationRequested)
+                {
+                    var srv = db.Parent;
+                    var connectionString = $"postgres://{db.DatabaseName}:{srv.PasswordParameter.Value}@{srv.Name}:{srv.PrimaryEndpoint.TargetPort}/{db.DatabaseName}";
+                    lakeFS.WithEnvironment("LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING", connectionString);
+                }
+                return Task.CompletedTask;
+            })
+        );
     }
 }
