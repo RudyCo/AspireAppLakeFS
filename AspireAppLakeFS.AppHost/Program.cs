@@ -5,9 +5,7 @@ var postgres = builder.AddPostgres("lakefs-postgres")
 
 var postgresdb = postgres.AddDatabase("lakefs-postgredb", "postgres");
 
-var lakefs = builder.AddLakeFS("lakefs", database: postgresdb.Resource)
-    .WithImageTag("1.39.2")
-    .WaitFor(postgresdb);
+var lakefs = builder.AddLakeFS("lakefs", database: postgresdb);
 
 var apiService = builder.AddProject<Projects.AspireAppLakeFS_ApiService>("apiservice")
      .WithReference(lakefs).WaitFor(lakefs);

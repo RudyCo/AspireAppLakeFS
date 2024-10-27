@@ -70,7 +70,7 @@ public static class LakeFSResourceBuilderExtensions
         this IDistributedApplicationBuilder builder,
         string name,
         int? httpPort = null,
-        PostgresDatabaseResource? database = null)
+        IResourceBuilder<PostgresDatabaseResource>? database = null)
     {
         // The AddResource method is a core API within .NET Aspire and is
         // used by resource developers to wrap a custom resource in an
@@ -94,9 +94,12 @@ public static class LakeFSResourceBuilderExtensions
         return lakeFS;
     }
 
-    private static void AddLakeFSDatabase(IDistributedApplicationBuilder builder, PostgresDatabaseResource db, IResourceBuilder<LakeFSResource> lakeFS)
+    private static void AddLakeFSDatabase(IDistributedApplicationBuilder builder, IResourceBuilder<PostgresDatabaseResource> database, IResourceBuilder<LakeFSResource> lakeFS)
     {
         lakeFS.WithEnvironment("LAKEFS_DATABASE_TYPE", "postgres");
+        lakeFS.WaitFor(database);
+
+        var db = database.Resource;
         builder.Eventing.Subscribe<ResourceReadyEvent>(db, async (@event, ct) =>
             await Task.Run(() =>
             {
