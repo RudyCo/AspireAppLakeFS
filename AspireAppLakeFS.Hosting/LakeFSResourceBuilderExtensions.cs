@@ -1,4 +1,5 @@
 ﻿using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Azure;
 using System.Security.Cryptography;
 
 #pragma warning disable IDE0130 // Namespace does not match folder structure
@@ -70,7 +71,8 @@ public static class LakeFSResourceBuilderExtensions
         this IDistributedApplicationBuilder builder,
         string name,
         int? httpPort = null,
-        IResourceBuilder<PostgresDatabaseResource>? database = null)
+        IResourceBuilder<PostgresDatabaseResource>? database = null,
+        IResourceBuilder<AzureStorageResource>? storage = null)
     {
         // The AddResource method is a core API within .NET Aspire and is
         // used by resource developers to wrap a custom resource in an
@@ -83,13 +85,17 @@ public static class LakeFSResourceBuilderExtensions
             .WithImageRegistry(LakeFSContainerImageTags.Registry)
             .WithHttpEndpoint(targetPort: 8000, port: httpPort, name: LakeFSResource.HttpEndpointName)
             .WithEnvironment("LAKEFS_AUTH_ENCRYPT_SECRET_KEY", CreateSecretKey())
-            .WithEnvironment("LAKEFS_BLOCKSTORE_TYPE", "local")
             .WithArgs(["run"]);
 
         if (database == null)
             lakeFS.WithEnvironment("LAKEFS_DATABASE_TYPE", "local");
         else
             AddLakeFSDatabase(builder, database, lakeFS);
+
+        if (storage == null)
+            lakeFS.WithEnvironment("LAKEFS_BLOCKSTORE_TYPE", "local");
+        else
+            AddLakeFSStorage(builder, storage, lakeFS);
 
         return lakeFS;
     }
@@ -100,8 +106,7 @@ public static class LakeFSResourceBuilderExtensions
         lakeFS.WaitFor(database);
 
         var db = database.Resource;
-        builder.Eventing.Subscribe<ResourceReadyEvent>(db, async (@event, ct) =>
-            await Task.Run(() =>
+        builder.Eventing.Subscribe<ResourceReadyEvent>(db, (@event, ct) =>
             {
                 if (!ct.IsCancellationRequested)
                 {
@@ -110,7 +115,32 @@ public static class LakeFSResourceBuilderExtensions
                     lakeFS.WithEnvironment("LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING", connectionString);
                 }
                 return Task.CompletedTask;
-            })
+            }
         );
+    }
+
+    private static void AddLakeFSStorage(IDistributedApplicationBuilder builder, IResourceBuilder<AzureStorageResource> storage, IResourceBuilder<LakeFSResource> lakeFS)
+    {
+        lakeFS.WithEnvironment("LAKEFS_BLOCKSTORE_TYPE", "azure");
+        lakeFS.WaitFor(storage);
+
+        var store = storage.Resource;
+        builder.Eventing.Subscribe<ResourceReadyEvent>(store, (@event, ct) =>
+        {
+            if (storage.Resource.IsEmulator)
+            {
+                // TODO lakeFS.WithEnvironment("LAKEFS_BLOCKSTORE_AZURE_TEST_ENDPOINT_URL", "http://127.0.0.1:10000/devstoreaccount1");
+                throw new NotImplementedException("Azurite not supported yet!");
+            }
+            else
+            {
+                // TODO, set env. var. for Azure Storage
+                // lakeFS.WithEnvironment("AZURE_TENANT_ID", "");
+                // lakeFS.WithEnvironment("AZURE_CLIENT_ID", "");
+                // lakeFS.WithEnvironment("AZURE_CLIENT_SECRET", "");
+            }
+
+            return Task.CompletedTask;
+        });
     }
 }

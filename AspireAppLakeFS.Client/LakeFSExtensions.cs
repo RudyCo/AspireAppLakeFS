@@ -113,5 +113,16 @@ public static class LakeFSExtensions
                     failureStatus: default,
                     tags: []);
         }
+        if (settings.DisableTracing is false)
+        {
+            builder.Services.AddOpenTelemetry()
+                .WithTracing();
+        }
+
+        if (settings.DisableMetrics is false)
+        {
+            builder.Services.AddOpenTelemetry()
+                .WithMetrics();
+        }
     }
 }

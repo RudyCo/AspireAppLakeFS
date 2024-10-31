@@ -6,14 +6,14 @@ namespace AspireAppLakeFS.Client.Client;
 #pragma warning restore IDE0130 // Namespace does not match folder structure
 
 /// <summary>
-/// Provides the client configuration settings for connecting LakeFS to an SMTP server.
+/// Provides the client configuration settings for connecting LakeFS.
 /// </summary>
 public sealed class LakeFSClientSettings
 {
     internal const string DefaultConfigSectionName = "LakeFS:Client";
 
     /// <summary>
-    /// Gets or sets the SMTP server <see cref="Uri"/>.
+    /// Gets or sets the Endpoint <see cref="Uri"/>.
     /// </summary>
     /// <value>
     /// The default value is <see langword="null"/>.
@@ -34,7 +34,7 @@ public sealed class LakeFSClientSettings
     /// <value>
     /// The default value is <see langword="false"/>.
     /// </value>
-    // public bool DisableTracing { get; set; }
+    public bool DisableTracing { get; set; }
 
     /// <summary>
     /// Gets or sets a boolean value that indicates whether the OpenTelemetry metrics are disabled or not.
@@ -42,7 +42,7 @@ public sealed class LakeFSClientSettings
     /// <value>
     /// The default value is <see langword="false"/>.
     /// </value>
-    // public bool DisableMetrics { get; set; }
+    public bool DisableMetrics { get; set; }
 
     internal void ParseConnectionString(string? connectionString)
     {

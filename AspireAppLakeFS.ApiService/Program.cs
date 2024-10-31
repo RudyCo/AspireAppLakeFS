@@ -1,12 +1,14 @@
 using AspireAppLakeFS.Client.Client;
+using Scalar.AspNetCore;
+using System.Text;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddOpenApi();
 
 // Add services to the container.
 builder.AddLakeFSClient("lakefs");
@@ -19,43 +21,47 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-});
-
-app.MapGet("/check_lakefs", async (LakeFSClientFactory factory) =>
+app.MapGet("/api/user", async (LakeFSClientFactory factory) =>
 {
     var client = await factory.GetHttpClientAsync();
-    var httpRepsonse = await client.GetAsync("/setup_lakefs");
+    var httpRepsonse = await client.GetAsync("/api/v1/user");
+    var response = await httpRepsonse.Content.ReadFromJsonAsync<object>();
+    return Results.Ok(response);
+});
 
-    var response = httpRepsonse.Content.ReadAsStringAsync();
+app.MapGet("/api/config", async (LakeFSClientFactory factory) =>
+{
+    var client = await factory.GetHttpClientAsync();
+    var httpRepsonse = await client.GetAsync("/api/v1/config");
+    var response = await httpRepsonse.Content.ReadFromJsonAsync<object>();
+    return Results.Ok(response);
+});
 
-    return response;
+app.MapPost("/api/setup_lakefs", async (LakeFSClientFactory factory) =>
+{
+    using StringContent jsonContent = new(
+        JsonSerializer.Serialize(new
+        {
+            username = "admin",
+            key = new
+            {
+                access_key_id = "AKIAIOSFODNN7EXAMPLE",
+                secret_access_key = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+            }
+        }),
+        Encoding.UTF8,
+        "application/json");
+
+    var client = await factory.GetHttpClientAsync();
+    var httpRepsonse = await client.PostAsync("/api/v1/setup_lakefs", jsonContent);
+    var response = await httpRepsonse.Content.ReadFromJsonAsync<object>();
+    return Results.Ok(response);
 });
 
 app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.
-app.UseSwagger();
-app.UseSwaggerUI();
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

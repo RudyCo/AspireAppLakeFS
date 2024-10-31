@@ -4,11 +4,10 @@ namespace AspireAppLakeFS.Client.Client;
 #pragma warning restore IDE0130 // Namespace does not match folder structure
 
 /// <summary>
-/// A factory for creating <see cref="ISmtpClient"/> instances
-/// given a <paramref name="smtpUri"/> (and optional <paramref name="credentials"/>).
+/// A factory for creating <see cref="HttpClient"/> instances
 /// </summary>
 /// <param name="settings">
-/// The <see cref="LakeFSClientSettings"/> settings for the SMTP server
+/// The <see cref="LakeFSClientSettings"/> settings for the server
 /// </param>
 public sealed class LakeFSClientFactory(LakeFSClientSettings settings) : IDisposable
 {
